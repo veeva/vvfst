@@ -45,21 +45,25 @@ var (
 func Login() error {
 	req := net.InitRestClient(config.EnableDebug).BuildRestRequest(false)
 
-	var auth model.AuthResult
+	var authResult model.AuthResult
 	resp, err := req.
 		SetFormData(map[string]string{
 			"username": config.Username(),
 			"password": config.Password()}).
-		SetResult(&auth).
+		SetResult(&authResult).
 		Post("/auth")
 
 	if err != nil {
 		return errors.Errorf("Failed to connect: %v", err)
 	}
 
+	if len(authResult.Errors) != 0 {
+		return errors.New(net.FormatRestResultError("", authResult.Errors[0]))
+	}
+
 	net.LogTime("Login successful.", resp)
 
-	config.SaveAuthResult(&auth)
+	config.SaveAuthResult(&authResult)
 	config.UpdateConfig()
 	return nil
 }
@@ -97,6 +101,32 @@ func ListPage(itemPath, nextPageURL string, limit int64, recursiveOpt, logStatus
 	}
 
 	return itemsRestResult, nil
+}
+
+// List items in the page, nextPageUrl is null then it will be the first page.
+func ListExport(itemPath string, recursiveOpt bool) (*model.JobRestResult, error) {
+	req := net.InitRestClient(config.EnableDebug).BuildRestRequest(true)
+
+	var jobRestResult *model.JobRestResult
+	var err error
+	_, err = req.SetResult(&jobRestResult).
+		SetQueryParam("recursive", strconv.FormatBool(recursiveOpt)).
+		SetQueryParam("format_result", "csv").
+		Get(fmt.Sprintf("/services/file_staging/items%s", itemPath))
+
+	if err != nil {
+		return nil, errors.Errorf("Failed to connect: %v", err)
+	}
+
+	if jobRestResult == nil {
+		return nil, errors.Errorf("Unknown error, response is empty")
+	}
+
+	if len(jobRestResult.Errors) != 0 {
+		return nil, errors.New(net.FormatRestResultError("", jobRestResult.Errors[0]))
+	}
+
+	return jobRestResult, nil
 }
 
 // Make the directory and ignores, dot, empty space directory
@@ -141,10 +171,17 @@ func CreateFolder(remotePath string, overwrite, logStatus bool) {
 // Download single from the file staging area
 func DownloadSingleFile(downloadItem *model.DownloadItem) {
 	vlog.Debugf("Download file: %s, size: %d ", downloadItem.RemotePath, downloadItem.Size)
-	resp, err := net.InitRestClient(config.EnableDebug).
+	req := net.InitRestClient(config.EnableDebug).
 		BuildRestRequest(true).
-		SetDoNotParseResponse(true).
-		Get(fmt.Sprintf("/services/file_staging/items/content%s", downloadItem.RemotePath))
+		SetDoNotParseResponse(true)
+
+	var err error
+	var resp *resty.Response
+	if downloadItem.RemoteHref != "" {
+		resp, err = req.Get(fmt.Sprintf("https://%s%s", config.DomainName(), downloadItem.RemoteHref))
+	} else {
+		resp, err = req.Get(fmt.Sprintf("/services/file_staging/items/content%s", downloadItem.RemotePath))
+	}
 
 	if err != nil {
 		vlog.Errorf("Failed to download file: %s, error: %v", downloadItem.RemotePath, err)
@@ -152,7 +189,9 @@ func DownloadSingleFile(downloadItem *model.DownloadItem) {
 	}
 	defer func() {
 		err = resp.RawBody().Close()
-		vlog.Errorf("Error closing http response")
+		if err != nil {
+			vlog.Errorf("Error closing http response")
+		}
 	}()
 
 	localParentDir := filepath.Dir(downloadItem.LocalPath)
@@ -183,14 +222,14 @@ func DownloadSingleFile(downloadItem *model.DownloadItem) {
 func UploadSingleFile(uploadItem *model.UploadItem, overwriteOpt bool) {
 	fi, err := os.Stat(uploadItem.LocalPath)
 	if err != nil {
-		vlog.Errorf("%s file not found", uploadItem.LocalPath)
+		vlog.Errorf("%s file not found, err: %v", uploadItem.LocalPath, err)
 		return
 	}
 
 	if fi.Size() > config.Size50MB {
 		err := MultipartUploadSingleFile(uploadItem.LocalPath, uploadItem.RemotePath, overwriteOpt)
 		if err != nil {
-			vlog.Errorf("%s failed to upload file", uploadItem.LocalPath)
+			vlog.Errorf("%v", err)
 		}
 		return
 	}
@@ -274,7 +313,7 @@ func MultipartUploadSingleFile(localPath, remotePath string, overwriteOpt bool) 
 	}
 
 	if uploadSession == nil {
-		uploadSession, err = MultipartUploadBegin(remotePath, localPath, overwriteOpt)
+		uploadSession, err = MultipartUploadBegin(localPath, remotePath, overwriteOpt)
 		if err != nil {
 			return err
 		}
@@ -415,12 +454,15 @@ func MultipartUploadCommit(uploadSession *model.UploadSession) error {
 	net.LogTime(fmt.Sprintf("upload session completed for file: %s, waiting for job completion", uploadSession.Path), resp)
 	msg := fmt.Sprintf("%s file upload sucessfully", uploadSession.Path)
 
-	return WaitForJobCompletion(jobRestResult.Data.JobID, msg, config.JobTimeoutSeconds)
+	_, err = WaitForJobCompletion(jobRestResult.Data.JobID, msg, config.JobTimeoutSeconds)
+	return err
 }
 
 // Check for job status every 10 seconds
-func WaitForJobCompletion(jobID int64, message string, timeoutSec int) error {
+func WaitForJobCompletion(jobID int64, message string, timeoutSec int) (*model.Link, error) {
 	completionTime := time.Now().Add(time.Second * time.Duration(timeoutSec))
+	jobIDStr := strconv.FormatInt(jobID, 10)
+	config.UpdateActiveJob(jobIDStr, message)
 
 	time.Sleep(time.Second) // first sleep for a second
 
@@ -432,11 +474,11 @@ func WaitForJobCompletion(jobID int64, message string, timeoutSec int) error {
 			Get(fmt.Sprintf("/services/jobs/%d", jobID))
 
 		if err != nil {
-			return errors.Errorf("Failed to connect: %v", err)
+			return nil, errors.Errorf("Failed to connect: %v", err)
 		}
 
 		if len(jobStatusRestResult.Errors) != 0 {
-			return errors.Errorf(net.FormatRestResultError(strconv.FormatInt(jobID, 10), jobStatusRestResult.Errors[0]))
+			return nil, errors.Errorf(net.FormatRestResultError(jobIDStr, jobStatusRestResult.Errors[0]))
 		}
 
 		if jobStatusRestResult.Data.Status == "SUCCESS" {
@@ -444,7 +486,17 @@ func WaitForJobCompletion(jobID int64, message string, timeoutSec int) error {
 				vlog.Infof(message)
 			}
 
-			return nil
+			config.RemoveActiveJob(jobIDStr)
+
+			var resultLink *model.Link
+			for _, link := range jobStatusRestResult.Data.Links {
+				if link.Rel == "results" {
+					resultLink = link
+					break
+				}
+			}
+
+			return resultLink, nil
 		}
 
 		vlog.Infof("Current job status: %s", jobStatusRestResult.Data.Status)
@@ -452,7 +504,7 @@ func WaitForJobCompletion(jobID int64, message string, timeoutSec int) error {
 		time.Sleep(10 * time.Second)
 	}
 
-	return errors.Errorf("Job not completed within %d seconds", timeoutSec)
+	return nil, errors.Errorf("Job not completed within %d seconds", timeoutSec)
 }
 
 func buildProgressbar(name string, size int64) *progressbar.ProgressBar {

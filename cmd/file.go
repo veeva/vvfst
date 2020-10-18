@@ -35,9 +35,11 @@ import (
 
 var (
 	recursiveOpt bool
+	csvFormatOpt bool
 	overwriteOpt bool
 	limitOpt     int64
 	threadCnt    int
+	timoutSec    int
 )
 
 // lsCmd represents the listCommand command
@@ -110,12 +112,22 @@ var mRmCmd = &cobra.Command{
 	},
 }
 
+var jobListCmd = &cobra.Command{
+	Use:   "jobs",
+	Short: "Display list of active jobs and check status",
+	Long:  "Display list of jobs and validate job status.  If job is completed and it will be removed from the list.  It keep track jobs submitted via this cli from this computer.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runWithAutoLogin(cmd, args, jobListCommand)
+	},
+}
+
 func init() {
 	config.InitConfig()
 
 	// List
 	rootCmd.AddCommand(lsCmd)
 	lsCmd.Flags().BoolVarP(&recursiveOpt, "recursive", "r", false, "Enable recursive mode to list all sub directories")
+	lsCmd.Flags().BoolVarP(&csvFormatOpt, "csvFormat", "c", false, "Export content list as csv file.")
 	lsCmd.Flags().Int64VarP(&limitOpt, "limit", "l", 100, "Limit number of items")
 
 	// Mkdir
@@ -145,6 +157,11 @@ func init() {
 
 	// Multipart Remove session
 	rootCmd.AddCommand(mRmCmd)
+
+	// Delete
+	rootCmd.AddCommand(jobListCmd)
+	jobListCmd.Flags().IntVarP(&threadCnt, "threadCount", "t", 1, "Number of concurrent thread to check job status")
+	jobListCmd.Flags().IntVarP(&timoutSec, "timoutSeconds", "T", 60, "How long job status to be checked")
 }
 
 func listCommand(cmd *cobra.Command, args []string) error {
@@ -155,6 +172,37 @@ func listCommand(cmd *cobra.Command, args []string) error {
 
 	if limitOpt < 0 || limitOpt > 1000 {
 		return fmt.Errorf("limit must be between 0 and 1000")
+	}
+
+	if csvFormatOpt {
+		jobRestResult, err := api.ListExport(itemPath, recursiveOpt)
+
+		if err != nil {
+			return err
+		}
+
+		resultLink, err := api.WaitForJobCompletion(jobRestResult.Data.JobID, fmt.Sprintf("%s list export as csv", itemPath), config.JobTimeoutSeconds)
+
+		if err != nil {
+			return err
+		}
+
+		if resultLink != nil {
+			if resultLink.Accept == "text/csv" {
+				reportPath := fmt.Sprintf("%d.csv", jobRestResult.Data.JobID)
+				downloadItem := &model.DownloadItem{
+					RemoteHref: resultLink.Href,
+					RemotePath: "",
+					Size:       -1,
+					LocalPath:  reportPath,
+				}
+
+				vlog.Infof("Downloading reports %s", reportPath)
+				api.DownloadSingleFile(downloadItem)
+			}
+		}
+
+		return nil
 	}
 
 	firstPageItemPath := itemPath
@@ -238,8 +286,10 @@ func mvCommand(cmd *cobra.Command, args []string) error {
 
 	net.LogTime("mv submitted successfully, waiting for job completion", resp)
 
-	return api.WaitForJobCompletion(jobRestResult.Data.JobID,
+	_, err = api.WaitForJobCompletion(jobRestResult.Data.JobID,
 		fmt.Sprintf("%s moved to %s successfully", srcRemoteItem, destRemoteItem), config.JobTimeoutSeconds)
+
+	return err
 }
 
 func rmCommand(cmd *cobra.Command, args []string) error {
@@ -265,7 +315,8 @@ func rmCommand(cmd *cobra.Command, args []string) error {
 
 	net.LogTime("rm submitted successfully, waiting for job completion", resp)
 
-	return api.WaitForJobCompletion(jobRestResult.Data.JobID, fmt.Sprintf("%s removed successfully", remoteItem), config.JobTimeoutSeconds)
+	_, err = api.WaitForJobCompletion(jobRestResult.Data.JobID, fmt.Sprintf("%s removed successfully", remoteItem), config.JobTimeoutSeconds)
+	return err
 }
 
 func uploadCommand(cmd *cobra.Command, args []string) error {
@@ -278,8 +329,7 @@ func uploadCommand(cmd *cobra.Command, args []string) error {
 
 	localItemStat, err := os.Stat(localItem)
 	if err != nil {
-		vlog.Errorf("%s not found", localItem)
-		return err
+		return fmt.Errorf("%s not found", localItem)
 	}
 
 	if localItemStat.Mode().IsRegular() {
@@ -438,6 +488,61 @@ func mrmCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	net.LogTime(fmt.Sprintf("Deleted upload session for %s", remoteItem), resp)
+
+	return nil
+}
+
+func jobListCommand(cmd *cobra.Command, args []string) error {
+	jobIDMap := config.ActiveJobs()
+	if len(jobIDMap) == 0 {
+		vlog.Info("No active job(s) available")
+		return nil
+	}
+
+	var wg sync.WaitGroup
+	ch := make(chan []string, threadCnt)
+
+	// run worker pool
+	for i := threadCnt; i > 0; i-- {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			for item := range ch {
+				jobIDStr, msg := item[0], item[1]
+				jobID, err := strconv.ParseInt(jobIDStr, 10, 0)
+				if err != nil {
+					vlog.Errorf("Reading jobId: %s, err: %v", jobIDStr, err)
+					return
+				}
+
+				// auto login
+				vlog.Infof("Checking job status: %s", jobIDStr)
+				_, err = api.WaitForJobCompletion(jobID, msg, timoutSec)
+				if net.IsSessionExpired(err) {
+					vlog.Infof("Session expired, auto Login")
+					if err := api.Login(); err == nil {
+						_, err = api.WaitForJobCompletion(jobID, msg, timoutSec)
+					}
+				}
+
+				if err != nil {
+					vlog.Errorf("Failed to check job: %s, err: %v", jobIDStr, err)
+					return
+				}
+
+				vlog.Infof("Job completed -  %s", msg)
+			}
+		}()
+	}
+
+	for key, val := range jobIDMap {
+		ch <- []string{key, val}
+	}
+
+	close(ch)
+	wg.Wait()
 
 	return nil
 }

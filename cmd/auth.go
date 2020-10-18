@@ -22,6 +22,9 @@ import (
 	"github.com/veeva/vvfst/api"
 	"github.com/veeva/vvfst/config"
 	"github.com/veeva/vvfst/vlog"
+	"golang.org/x/crypto/ssh/terminal"
+	"strings"
+	"syscall"
 )
 
 // loginCmd represents the Login command
@@ -50,13 +53,6 @@ func init() {
 
 	// Login
 	rootCmd.AddCommand(loginCmd)
-
-	loginCmd.PersistentFlags().StringP("password", "p", config.PasswordMasked(), "Password for the user to Login")
-	if config.PasswordMasked() == "" {
-		_ = loginCmd.MarkPersistentFlagRequired(config.ConfigKeyPassword)
-	}
-	_ = viper.BindPFlag(config.ConfigKeyPassword, loginCmd.PersistentFlags().Lookup("password"))
-
 	buildCmdOption(loginCmd, "domain_name", "d", "Vault domain name", config.DomainName, config.ConfigKeyDomainName)
 	buildCmdOption(loginCmd, "username", "u", "Vault username", config.Username, config.ConfigKeyUsername)
 	buildCmdOption(loginCmd, "api_version", "a", "API Version", config.APIVersion, config.ConfigKeyAPIVersion)
@@ -67,6 +63,7 @@ func init() {
 }
 
 func loginCommand(cmd *cobra.Command, args []string) error {
+	config.SetPassword(readPassword())
 	return api.Login()
 }
 
@@ -89,4 +86,15 @@ func buildCmdOption(cmd *cobra.Command, flagName, flagNameShort, flagDescription
 		_ = cmd.MarkPersistentFlagRequired(configName) // Required param if config is missing
 	}
 	_ = viper.BindPFlag(configName, cmd.PersistentFlags().Lookup(flagName)) // read from cli or config
+}
+
+func readPassword() string {
+	fmt.Print("Enter Password: ")
+	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		panic("Failed to read password")
+	}
+	password := string(bytePassword)
+
+	return strings.TrimSpace(password)
 }

@@ -30,7 +30,7 @@ var rootCmd = &cobra.Command{
 The cli authenticates using REST API then session will be cached locally for subsequent REST API calls. 
 Each command has unique functionality, and help doc is obtained by -h argument
 Example:
-  vvfst Login -h
+  vvfst login -h
 
 LICENSE:
 =============================================================================================

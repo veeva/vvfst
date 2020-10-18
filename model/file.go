@@ -68,16 +68,14 @@ type Item struct {
 }
 
 type ItemsRestResult struct {
-	ResponseStatus  ResponseStatusType `json:"responseStatus"`
-	ResponseDetails *ResponseDetails   `json:"responseDetails"`
-	Data            []*Item            `json:"data"`
-	Errors          []*RestResultError `json:"errors"`
+	RestResult
+	ResponseDetails *ResponseDetails `json:"responseDetails"`
+	Data            []*Item          `json:"data"`
 }
 
 type ItemRestResult struct {
-	ResponseStatus ResponseStatusType `json:"responseStatus"`
-	Data           *Item              `json:"data"`
-	Errors         []*RestResultError `json:"errors"`
+	RestResult
+	Data *Item `json:"data"`
 }
 
 type UploadSession struct {
@@ -93,15 +91,13 @@ type UploadSession struct {
 }
 
 type UploadSessionsRestResult struct {
-	ResponseStatus ResponseStatusType `json:"responseStatus"`
-	Data           []*UploadSession   `json:"data"`
-	Errors         []*RestResultError `json:"errors"`
+	RestResult
+	Data []*UploadSession `json:"data"`
 }
 
 type UploadSessionRestResult struct {
-	ResponseStatus ResponseStatusType `json:"responseStatus"`
-	Data           *UploadSession     `json:"data"`
-	Errors         []*RestResultError `json:"errors"`
+	RestResult
+	Data *UploadSession `json:"data"`
 }
 
 type UploadPart struct {
@@ -111,15 +107,13 @@ type UploadPart struct {
 }
 
 type UploadPartRestResult struct {
-	ResponseStatus ResponseStatusType `json:"responseStatus"`
-	Data           *UploadPart        `json:"data"`
-	Errors         []*RestResultError `json:"errors"`
+	RestResult
+	Data *UploadPart `json:"data"`
 }
 
 type UploadPartsRestResult struct {
-	ResponseStatus ResponseStatusType `json:"responseStatus"`
-	Data           []*UploadPart      `json:"data"`
-	Errors         []*RestResultError `json:"errors"`
+	RestResult
+	Data []*UploadPart `json:"data"`
 }
 
 type Job struct {
@@ -128,12 +122,13 @@ type Job struct {
 }
 
 type JobRestResult struct {
-	ResponseStatus ResponseStatusType `json:"responseStatus"`
-	Data           *Job               `json:"data"`
-	Errors         []*RestResultError `json:"errors"`
+	RestResult
+	Data *Job `json:"data"`
 }
 
+// DownloadItem - Download from RemotePath or Remote Href, either one should be available.
 type DownloadItem struct {
+	RemoteHref string
 	RemotePath string
 	Size       int64
 	LocalPath  string

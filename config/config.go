@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 )
 
 const (
@@ -44,6 +45,7 @@ const (
 	ConfigKeyPassword     = "password"
 	ConfigAuthResult      = "auth_result"
 	ConfigUploadSessionID = "upload_session_id"
+	ConfigActiveJobIDs    = "active_jobs"
 )
 
 func DomainName() string {
@@ -66,6 +68,10 @@ func PasswordMasked() string {
 }
 func Password() string {
 	return viper.GetString(ConfigKeyPassword)
+}
+
+func SetPassword(password string) {
+	viper.Set(ConfigKeyPassword, password)
 }
 
 func UploadSessionID() string {
@@ -103,6 +109,37 @@ func AuthResult() *model.AuthResult {
 	}
 
 	return authResult
+}
+
+var activeJobMutex = &sync.Mutex{}
+
+func UpdateActiveJob(jobID, status string) {
+	activeJobMutex.Lock()
+	defer activeJobMutex.Unlock()
+
+	jobIDMap := ActiveJobs()
+	val, ok := jobIDMap[jobID]
+	if !ok || val != status {
+		jobIDMap[jobID] = status
+		viper.Set(ConfigActiveJobIDs, jobIDMap)
+		UpdateConfig()
+	}
+}
+
+func RemoveActiveJob(jobID string) {
+	activeJobMutex.Lock()
+	defer activeJobMutex.Unlock()
+
+	jobIDMap := ActiveJobs()
+	if _, ok := jobIDMap[jobID]; ok {
+		delete(jobIDMap, jobID)
+		viper.Set(ConfigActiveJobIDs, jobIDMap)
+	}
+	UpdateConfig()
+}
+
+func ActiveJobs() map[string]string {
+	return viper.GetStringMapString(ConfigActiveJobIDs)
 }
 
 func UpdateConfig() {
@@ -166,7 +203,7 @@ func InitConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
-		vlog.Errorf("Configuration not initialized")
+		//vlog.Errorf("Configuration not initialized")
 	}
 
 	initialized = true

@@ -21,15 +21,10 @@ type VaultID struct {
 	URL  string
 }
 
-type Error struct {
-	Type    string `json:"type,omitempty"`
-	Message string `json:"message,omitempty"`
-}
-
 type BaseResult struct {
-	ResponseStatus  string   `json:"responseStatus,omitempty"`
-	ResponseMessage string   `json:"responseMessage,omitempty"`
-	Errors          []*Error `json:"errors,omitempty"`
+	ResponseStatus  string             `json:"responseStatus,omitempty"`
+	ResponseMessage string             `json:"responseMessage,omitempty"`
+	Errors          []*RestResultError `json:"errors,omitempty"`
 }
 
 type AuthResult struct {
