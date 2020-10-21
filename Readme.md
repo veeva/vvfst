@@ -29,9 +29,11 @@ The CLI is built into your native platform and available in the release section 
 	
 **Note mac user**  
   This tool is not distributed through app store hence the mac will complain about security.  If you see a security dialog,
+  
   ![Security Warning](https://github.com/veeva/vvfst/blob/main/security-warning.png)
   
   go to system preference and click on the security and allow `vvfst` to run
+  
   ![Unblock Security warning](https://github.com/veeva/vvfst/blob/main/security-allow.png)
   	
   
