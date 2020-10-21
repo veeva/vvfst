@@ -26,8 +26,13 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "vvfst",
 	Short: "A cli tool to manage files in the File Staging Area using File Staging REST API",
-	Long: `This cli tool connects the File Staging Area using the newly introduce File Staging REST API. 
-The cli authenticates using REST API then session will be cached locally for subsequent REST API calls. 
+	Long: `This cli tool connects the File Staging Area using the newly introduced File Staging REST API. 
+The cli authenticates using REST API then session will be cached locally for subsequent REST API calls.
+
+A Veeva Vault File Staging Tool (vvfst) allows managing files on the Vault file staging area. Find out 
+more about this tool at https://github.com/veeva/vvfst. Find out more about File Staging REST API at 
+https://developer.veevavault.com/api/20.3/#file-staging.
+
 Each command has unique functionality, and help doc is obtained by -h argument
 Example:
   vvfst login -h
