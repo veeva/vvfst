@@ -3,15 +3,15 @@
   
   
 # Overview  
-  
-A Veeva Vault File Staging Tool (vvfst) is a cli client using the REST API to access the staging area using newly introduced File Staging API, REST API.  Like FTP, this tool has all CLI commands to upload, download, list, etc., files in the staging area.  The CLI wraps around the REST API for login/logout and executing REST API.  
+
+A Veeva Vault File Staging Tool (vvfst) allows managing files on the Vault file staging area. It uses the File Staging REST API to access the file staging area. Like the FTP, this tool has CLI commands to upload, download, list, etc., files in the file staging area. Find out more about File Staging REST API at https://developer.veevavault.com/api/20.3/#file-staging
   
 ## Features  
-The CLI wraps around all File Staging REST API and makes easier for end user to consume the API.  High level features are:  
+The CLI wraps around all File Staging REST API and makes it easier for end user to consume the API.  High level features are:  
   
 * Upload a directory with a single command, file of any size is handled automatically.  
 * Download an entire directory from staging area.  
-* Listing of all files and folders in the staging area.  
+* Get listing of all files and folders in the staging area.  
 * Move/Delete any file/directory.  
 * Upload/Download with concurrent processes.  
 * Auto login if the session expired for uninterrupted usage.  
@@ -20,12 +20,12 @@ The CLI wraps around all File Staging REST API and makes easier for end user to 
 [![asciicast](https://asciinema.org/a/iWzJve3MUH69EpFZZZqmlHas5.svg)](https://asciinema.org/a/iWzJve3MUH69EpFZZZqmlHas5)
   
 # Installation  
-The CLI is built into your native platform and available in the release section [Release Section](https://github.com/veeva/vvfst/releases).  
+The CLI is built for your native platform and available in the release section [Release Section](https://github.com/veeva/vvfst/releases).  
 
 * Download the distribution as per your OS 
 * Extract and copy the vvfst into your accessible path
-	* For linux/osx it would be, `/usr/local/bin`
-	* For windows it would be, `C:\Windows\System32`
+	* For linux/osx it would be `/usr/local/bin`
+	* For windows it would be `C:\Windows\System32`
 	
 **Note mac user**  
   This tool is not distributed through app store hence the mac will complain about security.  If you see a security dialog,
@@ -40,8 +40,10 @@ The CLI is built into your native platform and available in the release section 
 ## Usage  
 The command has self documentation  
 ```  
-This cli tool connects the File Staging Area using the newly introduce File Staging REST API.
-The cli authenticates using REST API then session will be cached locally for subsequent REST API calls.
+A Veeva Vault File Staging Tool (vvfst) allows managing files on the Vault file staging area. 
+Find out more about this tool at https://github.com/veeva/vvfst. Find out more about File Staging 
+REST API at https://developer.veevavault.com/api/20.3/#file-staging
+
 Each command has unique functionality, and help doc is obtained by -h argument
 Example:
   vvfst login -h
@@ -71,14 +73,14 @@ Use "vvfst [command] --help" for more information about a command.
 ```  
   
 Note: 
-The configuration, such as login credential, domain and status are cache in the `$HOME/.vvfst.yaml`
+The configuration, such as login credential, domain and status are cached in the `$HOME/.vvfst.yaml`
 
 # Commands
 Usage of each commands with example found here [Commands](https://github.com/veeva/vvfst/blob/main/commands.md)
 
   
 # Development  
-If you wanted to add more functionality and develop from scratch then, these steps are for you.
+If you'd like to add additional functionality and develop from scratch then, these steps are for you.
 
 * Install the golang 
 * Checkout the source `git checkout https://github.com/veeva/vvfst`
