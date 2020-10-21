@@ -26,6 +26,16 @@ The CLI is built for your native platform and available in the release section [
 * Extract and copy the vvfst into your accessible path
 	* For linux/osx it would be `/usr/local/bin`
 	* For windows it would be `C:\Windows\System32`
+	
+**Note mac user**  
+  This tool is not distributed through app store hence the mac will complain about security.  If you see a security dialog,
+  
+  ![Security Warning](https://github.com/veeva/vvfst/blob/main/security-warning.png)
+  
+  go to system preference and click on the security and allow `vvfst` to run
+  
+  ![Unblock Security warning](https://github.com/veeva/vvfst/blob/main/security-allow.png)
+  	
   
 ## Usage  
 The command has self documentation  
