@@ -62,12 +62,12 @@ func init() {
 	logoutCmd.Flags().BoolVarP(&clearOpt, "clear", "c", false, "Clear all configuration data")
 }
 
-func loginCommand(cmd *cobra.Command, args []string) error {
+func loginCommand(_ *cobra.Command, _ []string) error {
 	config.SetPassword(readPassword())
 	return api.Login()
 }
 
-func logout(cmd *cobra.Command, args []string) {
+func logout(_ *cobra.Command, _ []string) {
 	if clearOpt {
 		fmt.Println("Clearing configuration..")
 		config.ResetConfig()

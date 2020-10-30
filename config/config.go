@@ -23,6 +23,7 @@ import (
 	"github.com/veeva/vvfst/vlog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"sync"
 )
@@ -48,41 +49,43 @@ const (
 	ConfigActiveJobIDs    = "active_jobs"
 )
 
+// DomainName - return domain name from configuration
 func DomainName() string {
 	return viper.GetString(ConfigKeyDomainName)
 }
 
+// APIVersion - return api version from configuration
 func APIVersion() string {
 	return viper.GetString(ConfigKeyAPIVersion)
 }
 
+// Username - return username from configuration
 func Username() string {
 	return viper.GetString(ConfigKeyUsername)
 }
 
-func PasswordMasked() string {
-	if Password() == "" {
-		return ""
-	}
-	return "****"
-}
+// Password - return password from configuration
 func Password() string {
 	return viper.GetString(ConfigKeyPassword)
 }
 
+// SetPassword - store password in the configuration
 func SetPassword(password string) {
 	viper.Set(ConfigKeyPassword, password)
 }
 
+// UploadSessionID - return upload session id from configuration
 func UploadSessionID() string {
 	return viper.GetString(ConfigUploadSessionID)
 }
 
-func SaveUploadSessionID(sessionID string) {
+// SetUploadSessionID - Store upload session id in the configuration
+func SetUploadSessionID(sessionID string) {
 	viper.Set(ConfigUploadSessionID, sessionID)
 }
 
-func SaveAuthResult(result *model.AuthResult) {
+// SetAuthResult - Save auth result in the configuration
+func SetAuthResult(result *model.AuthResult) {
 	authResult := map[string]interface{}{
 		"session_id": result.SessionID,
 		"vault_id":   result.VaultID,
@@ -91,6 +94,7 @@ func SaveAuthResult(result *model.AuthResult) {
 	viper.Set(ConfigAuthResult, authResult)
 }
 
+// AuthResult - return auth result from configuration
 func AuthResult() *model.AuthResult {
 	if !viper.IsSet(ConfigAuthResult) {
 		return nil
@@ -113,6 +117,7 @@ func AuthResult() *model.AuthResult {
 
 var activeJobMutex = &sync.Mutex{}
 
+// UpdateActiveJob - update list of active jobs in the configuration
 func UpdateActiveJob(jobID, status string) {
 	activeJobMutex.Lock()
 	defer activeJobMutex.Unlock()
@@ -126,6 +131,7 @@ func UpdateActiveJob(jobID, status string) {
 	}
 }
 
+// RemoveActiveJob - remove and update list of active jobs in the configuration
 func RemoveActiveJob(jobID string) {
 	activeJobMutex.Lock()
 	defer activeJobMutex.Unlock()
@@ -138,10 +144,12 @@ func RemoveActiveJob(jobID string) {
 	UpdateConfig()
 }
 
+// ActiveJobs - return list of active jobs
 func ActiveJobs() map[string]string {
 	return viper.GetStringMapString(ConfigActiveJobIDs)
 }
 
+// UpdateConfig - update configuration
 func UpdateConfig() {
 	if _, err := os.Stat(cfgFile); os.IsNotExist(err) {
 		if _, err := os.Create(cfgFile); err != nil {
@@ -155,10 +163,12 @@ func UpdateConfig() {
 	}
 }
 
+// ResetAuthResult - clear authentication information
 func ResetAuthResult() {
 	viper.Set(ConfigAuthResult, "")
 }
 
+// ResetConfig - reset the configuration
 func ResetConfig() {
 	viper.Reset()
 	if _, err := os.Stat(cfgFile); os.IsNotExist(err) {
@@ -178,7 +188,13 @@ func InitConfig() {
 		return
 	}
 
-	vlog.InitLog(false)
+	noColor := false
+	if runtime.GOOS == "windows" {
+		// Disabled since ANSI color did not work consistently across multiple version
+		noColor = true
+	}
+
+	vlog.InitLog(noColor)
 
 	if cfgFile != "" {
 		// Use config file from the flag.
@@ -200,6 +216,7 @@ func InitConfig() {
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
+	viper.SetEnvPrefix("v")
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {

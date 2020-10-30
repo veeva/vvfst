@@ -24,79 +24,95 @@ import (
 )
 
 var logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-var consoleNoColor = true
 
-func InitLog(nocolor bool) {
+// InitLog - initialize the logging
+func InitLog(noColor bool) {
 	output := zerolog.ConsoleWriter{
 		Out:         os.Stdout,
 		TimeFormat:  zerolog.TimeFormatUnix,
-		FormatLevel: consoleDefaultFormatLevel(nocolor),
+		FormatLevel: consoleDefaultFormatLevel(noColor),
+		NoColor:     noColor,
 	}
 
-	consoleNoColor = nocolor
 	logger = zerolog.New(output).With().Timestamp().Logger().Level(zerolog.InfoLevel)
 }
 
+// Trace - log message in trace level
 func Trace(msg string) {
 	logger.Trace().Msg(msg)
 }
 
+// Tracef - log message in trace level
 func Tracef(msg string, v ...interface{}) {
 	logger.Trace().Msgf(msg, v...)
 }
 
+// Debug - log message in debug level
 func Debug(msg string) {
 	logger.Debug().Msg(msg)
 }
 
+// Debugf - log message in debug level
 func Debugf(msg string, v ...interface{}) {
 	logger.Debug().Msgf(msg, v...)
 }
 
+// Info - log message in info level
 func Info(msg string) {
 	logger.Info().Msg(msg)
 }
 
+// Infof - log message in info level
 func Infof(msg string, v ...interface{}) {
 	logger.Info().Msgf(msg, v...)
 }
 
+// Warn - log message in warn level
 func Warn(msg string) {
 	logger.Warn().Msg(msg)
 }
 
+// Warnf - log message in warn level
 func Warnf(msg string, v ...interface{}) {
 	logger.Warn().Msgf(msg, v...)
 }
 
+// Error - log message in error level
 func Error(msg string) {
 	logger.Error().Msg(msg)
 }
 
+// Errorf - log message in error level
 func Errorf(msg string, v ...interface{}) {
 	logger.Error().Msgf(msg, v...)
 }
 
+// Fatal - log message in fatal level
 func Fatal(msg string) {
 	logger.Fatal().Msg(msg)
 }
 
+// Fatalf - log message in fatal level
 func Fatalf(msg string, v ...interface{}) {
 	logger.Fatal().Msgf(msg, v...)
 }
 
+// Panic - log message in panic mode
 func Panic(msg string) {
 	logger.Panic().Msg(msg)
 }
 
+// Panicf - log message in panic mode
 func Panicf(msg string, v ...interface{}) {
 	logger.Panic().Msgf(msg, v...)
 }
 
+// NoFormatLog - log message without any format or level
 func NoFormatLog(msg string) {
 	fmt.Println(msg)
 }
 
+// NoFormatLogf - log message without any format or level
 func NoFormatLogf(msg string, v ...interface{}) {
 	fmt.Printf(msg+"\n", v...)
 }
@@ -150,13 +166,6 @@ func consoleDefaultFormatLevel(noColor bool) zerolog.Formatter {
 
 func colorize(s interface{}, c int, disabled bool) string {
 	if disabled {
-		return fmt.Sprintf("%s", s)
-	}
-	return fmt.Sprintf("\x1b[%dm%v\x1b[0m", c, s)
-}
-
-func Colorize(s interface{}, c int) string {
-	if consoleNoColor {
 		return fmt.Sprintf("%s", s)
 	}
 	return fmt.Sprintf("\x1b[%dm%v\x1b[0m", c, s)

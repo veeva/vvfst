@@ -26,7 +26,7 @@ import (
 	"github.com/veeva/vvfst/net"
 	"github.com/veeva/vvfst/util"
 	"github.com/veeva/vvfst/vlog"
-	os "os"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -164,7 +164,7 @@ func init() {
 	jobListCmd.Flags().IntVarP(&timoutSec, "timoutSeconds", "T", 60, "How long job status to be checked")
 }
 
-func listCommand(cmd *cobra.Command, args []string) error {
+func listCommand(_ *cobra.Command, args []string) error {
 	itemPath := "/"
 	if len(args) == 1 {
 		itemPath = strings.TrimSpace(args[0])
@@ -237,7 +237,7 @@ func listCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func mkdirCommand(cmd *cobra.Command, args []string) error {
+func mkdirCommand(_ *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("must specify a <remote-folder>")
 	}
@@ -248,9 +248,9 @@ func mkdirCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func mvCommand(cmd *cobra.Command, args []string) error {
+func mvCommand(_ *cobra.Command, args []string) error {
 	if len(args) != 2 {
-		return fmt.Errorf("Must specify <src-remote-file/folder> and <dest-remote-file/folder>")
+		return fmt.Errorf("must specify <src-remote-file/folder> and <dest-remote-file/folder>")
 	}
 
 	srcRemoteItem := strings.TrimSpace(args[0])
@@ -292,9 +292,9 @@ func mvCommand(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func rmCommand(cmd *cobra.Command, args []string) error {
+func rmCommand(_ *cobra.Command, args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("Must specify <remote-file/folder>")
+		return fmt.Errorf("must specify <remote-file/folder>")
 	}
 
 	remoteItem := strings.TrimSpace(args[0])
@@ -319,9 +319,9 @@ func rmCommand(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func uploadCommand(cmd *cobra.Command, args []string) error {
+func uploadCommand(_ *cobra.Command, args []string) error {
 	if len(args) != 2 {
-		return fmt.Errorf("Missing required args <local-folder/file> and/or <remote-folder/file>")
+		return fmt.Errorf("missing required args <local-folder/file> and/or <remote-folder/file>")
 	}
 
 	localItem := strings.TrimSpace(args[0])
@@ -367,6 +367,7 @@ func uploadCommand(cmd *cobra.Command, args []string) error {
 
 		// check if it is a regular file (not dir)
 		remotePath1 := strings.Replace(path, localItem, "", 1)
+		remotePath1 = strings.ReplaceAll(remotePath1, string(os.PathSeparator), "/")
 		remotePath := remoteItem + remotePath1
 		if info.Mode().IsRegular() {
 			uploadItem := model.UploadItem{RemotePath: remotePath, LocalPath: path}
@@ -385,9 +386,9 @@ func uploadCommand(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func downloadCommand(cmd *cobra.Command, args []string) error {
+func downloadCommand(_ *cobra.Command, args []string) error {
 	if len(args) != 2 {
-		return fmt.Errorf("Missing required args <remote-folder/file> and/or <local-folder/file>")
+		return fmt.Errorf("missing required args <remote-folder/file> and/or <local-folder/file>")
 	}
 
 	remoteItem := strings.TrimSpace(args[0])
@@ -408,7 +409,7 @@ func downloadCommand(cmd *cobra.Command, args []string) error {
 			return errors.Errorf("No items found")
 		}
 
-		downloadItems := []*model.DownloadItem{}
+		var downloadItems []*model.DownloadItem
 		for _, item := range itemsRestResult.Data {
 			if item.Kind == "folder" {
 				continue
@@ -433,7 +434,7 @@ func downloadCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func mlistCommand(cmd *cobra.Command, args []string) error {
+func mlistCommand(_ *cobra.Command, _ []string) error {
 	sessionsRestResult, err := api.MultipartList(true)
 	if err != nil {
 		return err
@@ -450,9 +451,9 @@ func mlistCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func mrmCommand(cmd *cobra.Command, args []string) error {
+func mrmCommand(_ *cobra.Command, args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("Must specify <remote-file>")
+		return fmt.Errorf("must specify <remote-file>")
 	}
 
 	remoteItem := strings.TrimSpace(args[0])
@@ -492,7 +493,7 @@ func mrmCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func jobListCommand(cmd *cobra.Command, args []string) error {
+func jobListCommand(_ *cobra.Command, _ []string) error {
 	jobIDMap := config.ActiveJobs()
 	if len(jobIDMap) == 0 {
 		vlog.Info("No active job(s) available")

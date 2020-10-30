@@ -17,12 +17,11 @@ package util
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 	"unicode/utf8"
 )
 
-// Return truncated with ellipses when string is maximum than the given size
+// FixedWidth - Return truncated with ellipses when string is maximum than the given size
 func FixedWidth(msg string, size int, ellipses bool) string {
 	s := size
 	e := ""
@@ -37,6 +36,7 @@ func FixedWidth(msg string, size int, ellipses bool) string {
 	return fmt.Sprintf(f, msg)
 }
 
+// TrimLastChar - Remove last char
 func TrimLastChar(s string) string {
 	r, size := utf8.DecodeLastRuneInString(s)
 	if r == utf8.RuneError && (size == 0 || size == 1) {
@@ -45,10 +45,12 @@ func TrimLastChar(s string) string {
 	return s[:len(s)-size]
 }
 
+// EndWithFileSeparator - Return true if it ends with '/' otherwise false
 func EndWithFileSeparator(s string) bool {
-	return s[len(s)-1] == filepath.Separator
+	return s[len(s)-1] == '/'
 }
 
+// ByteCountSI - Return human readable bytes
 func ByteCountSI(b int64) string {
 	const unit = 1000
 	if b < unit {
@@ -63,6 +65,7 @@ func ByteCountSI(b int64) string {
 		float64(b)/float64(div), "kMGTPE"[exp])
 }
 
+// SplitParentAndName - Split the given path as path and name
 func SplitParentAndName(path string) (string, string) {
 	i := strings.LastIndex(path, "/")
 	parent := path[0:i]
@@ -73,6 +76,7 @@ func SplitParentAndName(path string) (string, string) {
 	return parent, name
 }
 
+// GetFilename - return name of the file/folder from last
 func GetFilename(path string) string {
 	i := strings.LastIndex(path, "/")
 	return path[i+1:]

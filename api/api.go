@@ -63,7 +63,7 @@ func Login() error {
 
 	net.LogTime("Login successful.", resp)
 
-	config.SaveAuthResult(&authResult)
+	config.SetAuthResult(&authResult)
 	config.UpdateConfig()
 	return nil
 }
@@ -275,7 +275,7 @@ func MultipartList(logStatus bool) (*model.UploadSessionsRestResult, error) {
 		Get("/services/file_staging/upload")
 
 	if err != nil {
-		return nil, fmt.Errorf("Failed to connect: %v", err)
+		return nil, fmt.Errorf("failed to connect: %v", err)
 	}
 
 	if logStatus {
@@ -319,7 +319,7 @@ func MultipartUploadSingleFile(localPath, remotePath string, overwriteOpt bool) 
 		}
 	}
 
-	config.SaveUploadSessionID(uploadSession.UploadSessionID)
+	config.SetUploadSessionID(uploadSession.UploadSessionID)
 	config.UpdateConfig()
 
 	err = MultipartUploadFilePart(localPath, uploadSession)
@@ -518,7 +518,7 @@ func buildProgressbar(name string, size int64) *progressbar.ProgressBar {
 		progressbar.OptionShowIts(),
 		progressbar.OptionSetRenderBlankState(true),
 		progressbar.OptionOnCompletion(func() {
-			fmt.Fprint(os.Stderr, "\n")
+			_, _ = fmt.Fprint(os.Stderr, "\n")
 		}),
 		progressbar.OptionSpinnerType(14),
 		progressbar.OptionSetTheme(progressbar.Theme{Saucer: "=", SaucerPadding: " ", BarStart: ">", BarEnd: "|"}),
