@@ -425,6 +425,10 @@ func MultipartUploadFilePart(localPath string, session *model.UploadSession) err
 			return errors.Errorf("Failed to upload file part: %s", localPath)
 		}
 
+		if len(partRestResult.Errors) != 0 {
+			return errors.Errorf(net.FormatRestResultError(session.Path, partRestResult.Errors[0]))
+		}
+
 		remainingSize = remainingSize - int64(n)
 
 		vlog.Infof("[%s] Uploaded part: %d of %d, size: %s, partContentMD5: %s", session.Path,

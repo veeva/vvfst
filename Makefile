@@ -18,12 +18,12 @@ build-win32:
 build-linux64:
 	echo "Building for linux64"
 	rm -rf dist/linux64
-	GOOS=linux GOARCH=amd64 go build -o dist/linux64/vvfst.exe main.go
+	GOOS=linux GOARCH=amd64 go build -o dist/linux64/vvfst main.go
 
 build-linux32:
 	echo "Building for linux32"
 	rm -rf dist/linux32
-	GOOS=linux GOARCH=386 go build -o dist/linux32/vvfst.exe main.go
+	GOOS=linux GOARCH=386 go build -o dist/linux32/vvfst main.go
 
 build-osx:
 	echo "Building for osx"
